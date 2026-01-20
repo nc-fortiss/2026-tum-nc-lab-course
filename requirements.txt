@@ -10,4 +10,4 @@ numba
 opencv-python
 tonic
 spikingjelly
-notebook
+jupyterlab

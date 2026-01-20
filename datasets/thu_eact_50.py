@@ -63,7 +63,7 @@ def random_zoom_events(events, max_zoom=0.5, resolution=(180, 240)):
 
 class THU_EACT_50(Dataset):
     def __init__(self, path="../THU_EACT_50", mode="front", train=True, augmentation=False, max_points=1000000,
-                 repr=['timeSurface'], sampling_time=10, sample_length=1000, ds_factor=3, center_crop=True):
+                 repr=['timeSurface'], sampling_time=10, sample_length=1000, ds_factor=3, center_crop=True, filter=False):
         super(THU_EACT_50, self).__init__()
         list_file_name = None
         eval = not train
@@ -93,6 +93,7 @@ class THU_EACT_50(Dataset):
 
         self.ds_factor = ds_factor
         self.center_crop = center_crop
+        self.filter = filter
 
         #known_file = open(known_file_name, "w")
         #unknown_file = open(unknown_file_name, "w")
@@ -182,6 +183,13 @@ class THU_EACT_50(Dataset):
             events[:, 3] = (events[:, 3] + 1.0) / 2.0
             np.add.at(reprs, (np.floor(events[:, 3]).astype(np.int32), np.clip(np.floor(events[:, 2]).astype(np.int32), 0, self.time_num-1), 
                               np.floor(events[:, 1]).astype(np.int32), np.floor(events[:, 0]).astype(np.int32)), 1)
+            # voxel filtering
+            if self.filter:
+                max_count = np.max(reprs)
+                sigma = np.std(reprs)
+                thres = int(np.max((0, int(np.floor(self.ds_factor / 2) - 1)))) #* (self.sampling_time/1000) #max_count - 3*sigma #0.5 * sigma * max_count #3*sigma
+                #print(thres)
+                reprs = np.where(reprs > thres, reprs-thres, 0) 
         else:
             reprs = []
             for repr_name in self.repr:
